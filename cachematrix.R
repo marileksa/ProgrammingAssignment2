@@ -1,7 +1,7 @@
 #####################################################################################################
 # Matrix inversion is usually a costly computation and 
 # there may be some benefit to caching the inverse of a matrix rather than 
-# computing it repeatedly. There are a pair of functions that cache the inverse of a matrix.
+# computing it repeatedly. There is a pair of functions that cache the inverse of a matrix.
 #####################################################################################################
 
 
@@ -14,13 +14,13 @@ makeCacheMatrix <- function(x = matrix()) {
         # initialize the matrix to NULL during the first call to makeCacheMatrix
         # this is needed because if getinverse() is called immediately after
         # the makeCacheMatrix funciton is constructed, without a call to setinverse
-        # we know we must first calculate the mean in cacheSolve.
+        # we know we must first calculate the matrix invesion in cacheSolve.
         inverse_m <- NULL
         
         
         # funciton to set a new value for the underlying matrix
-        # this invalidates the cached inverse matrix, inversed_m
-        # we use the <<- operator to set the value of x and inverse_m because we want
+        # this invalidates the cached inverse matrix, inversed_m;
+        # the <<- operator is used to set the value of x and inverse_m because we want
         # to modify x and inverse_m defined in the enclosing environment (created
         # when makeCacheMatrix was first called), not in the environment local to set(),
         # in which x and inverse_m are undefined.
@@ -34,8 +34,6 @@ makeCacheMatrix <- function(x = matrix()) {
         
         # getter function for underlying matrix
         # in R the return value of a function is the last statement.
-        # all of these functions could have been written as:
-        # return(x), etc... as the last line.
         get <- function() x
         
         # set the inverse of the matrix x.  Called by cachSolve,
@@ -76,20 +74,21 @@ cacheSolve <- function(x, ...) {
         # version of x
         if(!is.null(inverse_m)) {
                 message("getting cached data")
+                
                 # we have to explicily use return here otherwise we'd keep
                 # executing the code after the if conditional ends.  Since
                 # the cached version is good, just return it and we are done.
                 return(inverse_m)
         }
         
-        # either we havent computed the cached version yet, or we've called
+        # either we haven't computed the cached version yet, or we've called
         # set() previously and invalidated the cache.
         
         # call get() to get the underlying inverse matrix
         data <- x$get()
         
         # calculate the inverse of the underlying matrix, passing with it
-        # any varargs passed to cacheSolve
+        # any var args passed to cacheSolve
         inverse_m <- solve(data, ...)
         
         # now set the inverse matrix in x so we cache it and dont need to needlessly
@@ -100,3 +99,24 @@ cacheSolve <- function(x, ...) {
         # return the caching matrix
         inverse_m
 }
+
+# TEST: generate matrix, and the inverse of the matrix.
+size <- 1000 # size of the matrix edge
+test_matrix <- matrix(rnorm(size^2), nrow=size, ncol=size)
+test_matrix_inverse <- solve(test_matrix)
+
+# solve the matrix via the cache method
+special_matrix   <- makeCacheMatrix(test_matrix)
+
+# this should take longer than the next call since there will be 
+# an inverse computation performed for the first time
+special_matrix_inverse1 <- cacheSolve(special_matrix)
+
+# this should retrieve cached matrix calculated in the first call,
+# 'getting cached data' should get displayed to confirm the logic
+special_matrix_inverse2 <- cacheSolve(special_matrix)
+
+# this returns TRUE to confirm that all solved matrices are identical
+identical(test_matrix_inverse, special_matrix_inverse1) & identical(test_matrix_inverse, special_matrix_inverse2)
+
+
